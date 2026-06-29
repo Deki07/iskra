@@ -1,11 +1,9 @@
-const CACHE = 'iskra-v3';
-const APP_URL = '/iskra_iphone.html';
+const CACHE = 'iskra-v4';
+const APP_URL = '/iskra/iskra_iphone.html';
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(cache => {
-      return cache.addAll([APP_URL]);
-    })
+    caches.open(CACHE).then(cache => cache.addAll([APP_URL]))
   );
   self.skipWaiting();
 });
@@ -21,8 +19,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // Cache the main app page
-  if (url.pathname.includes('iskra_iphone.html') || url.pathname === '/') {
+  if (url.pathname.includes('iskra_iphone.html')) {
     e.respondWith(
       caches.open(CACHE).then(cache =>
         cache.match(APP_URL).then(cached => {
