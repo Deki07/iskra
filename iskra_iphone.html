@@ -104,54 +104,6 @@
   }
   #sync-btn:active { background: var(--red-dark); }
 
-  #settings-btn {
-    background: var(--surface2); border: none; color: var(--text);
-    padding: 7px 12px; border-radius: 20px;
-    font-size: 16px; cursor: pointer;
-  }
-  #settings-btn:active { background: var(--border); }
-
-  /* SETTINGS PANEL */
-  #settings-panel {
-    position: fixed; inset: 0; z-index: 500;
-    background: var(--bg);
-    display: none;
-    flex-direction: column;
-    padding: calc(var(--safe-top) + 20px) 24px 40px;
-  }
-  #settings-panel.show { display: flex; }
-  .settings-title {
-    font-size: 26px; font-weight: 800; color: var(--red);
-    margin-bottom: 30px;
-  }
-  .settings-label {
-    font-size: 13px; color: var(--text-dim);
-    text-transform: uppercase; letter-spacing: 1px;
-    margin-bottom: 8px;
-  }
-  .settings-input {
-    width: 100%; padding: 12px 16px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 12px; color: var(--text); font-size: 15px;
-    margin-bottom: 16px;
-  }
-  .settings-save {
-    width: 100%; padding: 14px;
-    background: var(--red); border: none; color: #fff;
-    border-radius: 12px; font-size: 16px; font-weight: 700;
-    cursor: pointer; margin-bottom: 12px;
-  }
-  .settings-close {
-    width: 100%; padding: 14px;
-    background: var(--surface2); border: none; color: var(--text-dim);
-    border-radius: 12px; font-size: 16px; cursor: pointer;
-  }
-  .settings-status {
-    margin-top: 20px; padding: 12px 16px;
-    background: var(--surface2); border-radius: 12px;
-    font-size: 13px; color: var(--text-dim); text-align: center;
-  }
-
   /* SERVER SETUP BANNER */
   #setup-banner {
     margin: 16px; padding: 14px 16px;
@@ -406,7 +358,7 @@
     <span id="status-text">Offline</span>
   </div>
   <button id="sync-btn" onclick="syncLibrary()">⟳ Sync</button>
-  <button id="settings-btn" onclick="openSettings()">⚙</button>
+  <button onclick="openSettings()" style="background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:4px 8px;">⚙</button>
 </div>
 
 <!-- SERVER SETUP BANNER -->
@@ -807,21 +759,51 @@ function showToast(msg) {
 }
 </script>
 
-<!-- SETTINGS PANEL -->
-<div id="settings-panel">
-  <div class="settings-title">⚙ Settings</div>
-  <div class="settings-label">Server Address</div>
-  <input class="settings-input" id="settings-url" type="url"
-    placeholder="https://xxxx.trycloudflare.com"
+<div id="settings-panel" style="display:none;position:fixed;inset:0;z-index:999;background:#0A0A0A;flex-direction:column;padding:60px 24px 40px;">
+  <div style="font-size:26px;font-weight:800;color:#CC0000;margin-bottom:30px;">⚙ Server Settings</div>
+  <div style="font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Cloudflare Tunnel Address</div>
+  <input id="settings-url" type="url" placeholder="https://xxxx.trycloudflare.com"
+    style="width:100%;padding:12px 16px;background:#1E1E1E;border:1px solid #2A2A2A;border-radius:12px;color:#F5F5F5;font-size:15px;margin-bottom:20px;"
     autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
-  <div class="settings-label" style="margin-top:4px;font-size:11px;color:var(--text-dim)">
-    Enter the Cloudflare tunnel address from your computer
-  </div>
-  <br>
-  <button class="settings-save" onclick="saveSettings()">💾 Save & Connect</button>
-  <button class="settings-close" onclick="closeSettings()">Cancel</button>
-  <div class="settings-status" id="settings-status"></div>
+  <button onclick="saveSettings()" style="width:100%;padding:14px;background:#CC0000;border:none;color:#fff;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:12px;">💾 Save & Connect</button>
+  <button onclick="closeSettings()" style="width:100%;padding:14px;background:#1E1E1E;border:none;color:#888;border-radius:12px;font-size:16px;cursor:pointer;">Cancel</button>
+  <div id="settings-status" style="margin-top:20px;padding:12px;background:#1E1E1E;border-radius:12px;font-size:13px;color:#888;text-align:center;"></div>
 </div>
+
+<script>
+function openSettings() {
+  const panel = document.getElementById('settings-panel');
+  panel.style.display = 'flex';
+  document.getElementById('settings-url').value = serverUrl || '';
+  document.getElementById('settings-status').textContent = serverUrl ? '✅ Current: ' + serverUrl : '⚠️ No server configured';
+}
+
+function closeSettings() {
+  document.getElementById('settings-panel').style.display = 'none';
+}
+
+async function saveSettings() {
+  let url = document.getElementById('settings-url').value.trim();
+  const status = document.getElementById('settings-status');
+  if (!url) { status.textContent = '⚠️ Enter an address'; return; }
+  if (!url.startsWith('http')) url = 'https://' + url;
+  url = url.replace(/\/+$/, '');
+  status.textContent = '🔄 Testing connection...';
+  try {
+    const r = await fetch(url + '/health', { signal: AbortSignal.timeout(6000) });
+    if (r.ok) {
+      serverUrl = url;
+      localStorage.setItem('iskra_server', serverUrl);
+      status.textContent = '✅ Connected!';
+      setTimeout(() => { closeSettings(); syncLibrary(); }, 1000);
+    } else {
+      status.textContent = '❌ Server not responding';
+    }
+  } catch(e) {
+    status.textContent = '❌ Cannot reach server. Is tunnel running?';
+  }
+}
+</script>
 
 </body>
 </html>
