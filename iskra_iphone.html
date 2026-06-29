@@ -14,11 +14,8 @@
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
       navigator.serviceWorker.register('./sw.js').then(function(reg) {
-        console.log('SW registered OK');
         reg.update();
-      }).catch(function(err) {
-        console.log('SW failed:', err);
-      });
+      }).catch(function(err) {});
     });
   }
 </script>
@@ -106,6 +103,54 @@
     display: flex; align-items: center; gap: 5px;
   }
   #sync-btn:active { background: var(--red-dark); }
+
+  #settings-btn {
+    background: var(--surface2); border: none; color: var(--text);
+    padding: 7px 12px; border-radius: 20px;
+    font-size: 16px; cursor: pointer;
+  }
+  #settings-btn:active { background: var(--border); }
+
+  /* SETTINGS PANEL */
+  #settings-panel {
+    position: fixed; inset: 0; z-index: 500;
+    background: var(--bg);
+    display: none;
+    flex-direction: column;
+    padding: calc(var(--safe-top) + 20px) 24px 40px;
+  }
+  #settings-panel.show { display: flex; }
+  .settings-title {
+    font-size: 26px; font-weight: 800; color: var(--red);
+    margin-bottom: 30px;
+  }
+  .settings-label {
+    font-size: 13px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .settings-input {
+    width: 100%; padding: 12px 16px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text); font-size: 15px;
+    margin-bottom: 16px;
+  }
+  .settings-save {
+    width: 100%; padding: 14px;
+    background: var(--red); border: none; color: #fff;
+    border-radius: 12px; font-size: 16px; font-weight: 700;
+    cursor: pointer; margin-bottom: 12px;
+  }
+  .settings-close {
+    width: 100%; padding: 14px;
+    background: var(--surface2); border: none; color: var(--text-dim);
+    border-radius: 12px; font-size: 16px; cursor: pointer;
+  }
+  .settings-status {
+    margin-top: 20px; padding: 12px 16px;
+    background: var(--surface2); border-radius: 12px;
+    font-size: 13px; color: var(--text-dim); text-align: center;
+  }
 
   /* SERVER SETUP BANNER */
   #setup-banner {
@@ -361,6 +406,7 @@
     <span id="status-text">Offline</span>
   </div>
   <button id="sync-btn" onclick="syncLibrary()">⟳ Sync</button>
+  <button id="settings-btn" onclick="openSettings()">⚙</button>
 </div>
 
 <!-- SERVER SETUP BANNER -->
@@ -449,7 +495,7 @@ let isPlaying = false;
 let shuffle = false;
 let repeat = false;
 let currentTab = 'all';
-let serverUrl = 'https://sherman-maintenance-rim-dance.trycloudflare.com'; localStorage.setItem('iskra_server', serverUrl);
+let serverUrl = localStorage.getItem('iskra_server') || ''; localStorage.setItem('iskra_server', serverUrl);
 let cachedSongs = JSON.parse(localStorage.getItem('iskra_cached') || '[]');
 
 const audio = document.getElementById('audio');
@@ -760,5 +806,22 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 </script>
+
+<!-- SETTINGS PANEL -->
+<div id="settings-panel">
+  <div class="settings-title">⚙ Settings</div>
+  <div class="settings-label">Server Address</div>
+  <input class="settings-input" id="settings-url" type="url"
+    placeholder="https://xxxx.trycloudflare.com"
+    autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+  <div class="settings-label" style="margin-top:4px;font-size:11px;color:var(--text-dim)">
+    Enter the Cloudflare tunnel address from your computer
+  </div>
+  <br>
+  <button class="settings-save" onclick="saveSettings()">💾 Save & Connect</button>
+  <button class="settings-close" onclick="closeSettings()">Cancel</button>
+  <div class="settings-status" id="settings-status"></div>
+</div>
+
 </body>
 </html>
